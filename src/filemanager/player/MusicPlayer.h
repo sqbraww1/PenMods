@@ -82,6 +82,10 @@ private:
 
     PlayList mPlayList;
 
+    // 随机播放洗牌袋:打乱索引依次播,播完再洗,避免重复
+    std::vector<size_t> mShuffleBag;
+    size_t              mShuffleListSize{0};
+
     struct {
         PlayFile mFile;
         size_t   mIndex{0};

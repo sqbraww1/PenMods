@@ -212,15 +212,31 @@ void MusicPlayer::clickRand() {
     (YPointer<YMediaPlayerManager>::getInstance(), &pos);
     PEN_CALL(void*, "_ZN19YMediaPlayerManager11closeRepeatEv", void*)(YPointer<YMediaPlayerManager>::getInstance());
     if (mPlayList.empty()) return;
-    std::optional<size_t> newIdx;
-    while (!newIdx) {
-        uint32 switched = QRandomGenerator::global()->bounded((int)mPlayList.size()); // safe, limited by fm.
-        if (mCurrentPlaying.mIndex != switched || mPlayList.size() == 1) {
-            newIdx = switched;
-            break;
+
+    const size_t cur = mCurrentPlaying.mIndex;
+    // 洗牌袋为空或歌单长度变化 -> 重新洗牌(Fisher-Yates)
+    if (mShuffleBag.empty() || mShuffleListSize != mPlayList.size()) {
+        mShuffleListSize = mPlayList.size();
+        mShuffleBag.resize(mShuffleListSize);
+        for (size_t i = 0; i < mShuffleListSize; i++)
+            mShuffleBag[i] = i;
+        for (size_t i = mShuffleListSize; i > 1; i--) {
+            uint32 j = QRandomGenerator::global()->bounded((uint32)i);
+            size_t tmp = mShuffleBag[i - 1];
+            mShuffleBag[i - 1] = mShuffleBag[j];
+            mShuffleBag[j]     = tmp;
+        }
+        // 避免与刚播完的这首相邻重复
+        if (mShuffleBag.size() > 1 && mShuffleBag.back() == cur) {
+            uint32 k = QRandomGenerator::global()->bounded((uint32)(mShuffleBag.size() - 1));
+            size_t tmp2 = mShuffleBag.back();
+            mShuffleBag.back() = mShuffleBag[k];
+            mShuffleBag[k]     = tmp2;
         }
     }
-    play(*newIdx);
+    size_t newIdx = mShuffleBag.back();
+    mShuffleBag.pop_back();
+    play(newIdx);
 }
 
 void MusicPlayer::onSoundEnd() {
