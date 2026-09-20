@@ -18,6 +18,7 @@
 #include <QFile>
 #include <QQmlContext>
 #include <QRandomGenerator>
+#include <cstdlib>
 
 #define PLAYER_FAKE_COLUMN_ID ("fake_column_hsxjsbw")
 
@@ -241,6 +242,7 @@ void MusicPlayer::clickRand() {
 
 void MusicPlayer::onSoundEnd() {
     mCurrentPlaying.mIsEnd = true;
+    checkAutoShutdown(); // 听 N 首后自动关机
     switch (getCurrentAudioSequence()) {
     case AudioSequence::ORDER:
         clickNext();
@@ -257,6 +259,28 @@ void MusicPlayer::onSoundEnd() {
         PEN_CALL(void*, "_ZN19YMediaPlayerManager12setPlayStateERKN12YEnumWrapper10Play_StateE", void*, void*)
         (YPointer<YMediaPlayerManager>::getInstance(), &state);
         break;
+    }
+}
+
+void MusicPlayer::checkAutoShutdown() {
+    int n = 0;
+    QFile f("/userdisk/PenMods/shutdown_after_songs");
+    if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        n = QString::fromUtf8(f.readAll()).trimmed().toInt();
+    }
+    if (n <= 0) {
+        mSongsPlayed        = 0;
+        mShutdownAfterSongs = 0;
+        return;
+    }
+    if (n != mShutdownAfterSongs) { // 阈值被改过 -> 重新计数
+        mShutdownAfterSongs = n;
+        mSongsPlayed        = 0;
+    }
+    mSongsPlayed++;
+    if (mSongsPlayed >= n) {
+        mSongsPlayed = 0;
+        std::system("sync; sync; /sbin/poweroff");
     }
 }
 

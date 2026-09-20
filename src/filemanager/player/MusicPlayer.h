@@ -86,6 +86,10 @@ private:
     std::vector<size_t> mShuffleBag;
     size_t              mShuffleListSize{0};
 
+    // 听 N 首后自动关机(0=关闭;N 从 /userdisk/PenMods/shutdown_after_songs 读取)
+    int mSongsPlayed{0};
+    int mShutdownAfterSongs{0};
+
     struct {
         PlayFile mFile;
         size_t   mIndex{0};
@@ -103,6 +107,9 @@ private:
     QString createTempSymlinks(const PlayFile& file, QString& outLrcPath);
 
     void _play(const PlayFile& file);
+
+    /// 听 N 首后自动关机检查
+    void checkAutoShutdown();
 
     // 临时软链接路径，用于清理
     QString mTempAudioLink;
