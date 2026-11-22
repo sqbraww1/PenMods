@@ -126,18 +126,20 @@ jobs:
           ${{ env.QT_DIR }}/bin/moc --version
 
       - name: 配置 xmake
-        timeout-minutes: 25
+        timeout-minutes: 50
         run: |
           echo "===== [1/4] install xmake ====="
           pacman -U --noconfirm binary/xmake-git-3.0.3.r259-1-x86_64.pkg.tar.zst
           echo "===== [2/4] xmake repo -u ====="
           timeout 600 xmake repo -u || echo "WARN: repo update failed or timed out, continuing"
-          echo "===== [3/4] opencc patch ====="
+          echo "===== [3/4] pin python + opencc patch ====="
+          sed -i 's|add_deps("cmake", "python 3.x", {kind = "binary"})|add_deps("cmake", "python 3.12.x", {kind = "binary"})|' \
+            ~/.xmake/repositories/xmake-repo/packages/o/opencc/xmake.lua || true
           sed -i \
             's|format("COMMAND\\n      %s/bin/opencc_dict", path.unix(package:dep("opencc"):installdir()))|"COMMAND\\n      /bin/opencc_dict"|g' \
             ~/.xmake/repositories/xmake-repo/packages/o/opencc/xmake.lua || true
           echo "===== [4/4] xmake configure ====="
-          timeout 900 xmake f \
+          timeout 2400 xmake f \
             --qt="${{ env.QT_DIR }}" \
             --arch=arm64-v8a \
             --build-platform=${{ env.BUILD_PLATFORM }} \
