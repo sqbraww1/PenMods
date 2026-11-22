@@ -133,10 +133,10 @@ jobs:
           echo "===== [2/4] xmake repo -u ====="
           timeout 600 xmake repo -u || echo "WARN: repo update failed or timed out, continuing"
           echo "===== [3/4] pin python + opencc patch ====="
-          sed -i 's|add_deps("cmake", "python 3.x", {kind = "binary"})|add_deps("cmake", "python 3.12.x", {kind = "binary"})|' \
+          ln -sf /usr/bin/python3 /usr/local/bin/python || true
+          python --version || true
+          sed -i '/add_deps("cmake", "python 3.x", {kind = "binary"})/d' \
             ~/.xmake/repositories/xmake-repo/packages/o/opencc/xmake.lua || true
-          sed -i 's|"--enable-ipv6", "--with-ensurepip", "--enable-optimizations"|"--enable-ipv6", "--with-ensurepip"|' \
-            ~/.xmake/repositories/xmake-repo/packages/p/python/xmake.lua || true
           sed -i \
             's|format("COMMAND\\n      %s/bin/opencc_dict", path.unix(package:dep("opencc"):installdir()))|"COMMAND\\n      /bin/opencc_dict"|g' \
             ~/.xmake/repositories/xmake-repo/packages/o/opencc/xmake.lua || true
