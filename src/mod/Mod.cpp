@@ -184,6 +184,7 @@ PEN_HOOK(bool, license_verify) { return true; }
 
 #include "system/battery/BatteryInfo.h"
 #include "system/input/InputDaemon.h"
+#include "system/input/MediaKeys.h"
 #include "system/input/ScreenManager.h"
 #include "system/sound/ASound.h"
 #include "system/sound/AudioDaemon.h"
@@ -262,6 +263,7 @@ __attribute__((constructor)) static void BeforeMain() {
     INSTANCE(BatteryInfo);
     INSTANCE(InputDaemon);
     INSTANCE(ScreenManager);
+    INSTANCE(MediaKeys);
     INSTANCE(ASound);
     INSTANCE(AudioDaemon);
 
