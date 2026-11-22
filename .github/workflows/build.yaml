@@ -79,6 +79,14 @@ jobs:
           restore-keys: |
             xmake-packages-
 
+      - name: 缓存 Xmake 仓库
+        uses: actions/cache@v4
+        with:
+          path: ~/.xmake/repositories
+          key: xmake-repo-${{ github.sha }}
+          restore-keys: |
+            xmake-repo-
+
       - name: 缓存 Xmake 编译缓存
         uses: actions/cache@v4
         with:
@@ -118,13 +126,18 @@ jobs:
           ${{ env.QT_DIR }}/bin/moc --version
 
       - name: 配置 xmake
+        timeout-minutes: 25
         run: |
+          echo "===== [1/4] install xmake ====="
           pacman -U --noconfirm binary/xmake-git-3.0.3.r259-1-x86_64.pkg.tar.zst
-          xmake repo -u
+          echo "===== [2/4] xmake repo -u ====="
+          timeout 600 xmake repo -u || echo "WARN: repo update failed or timed out, continuing"
+          echo "===== [3/4] opencc patch ====="
           sed -i \
             's|format("COMMAND\\n      %s/bin/opencc_dict", path.unix(package:dep("opencc"):installdir()))|"COMMAND\\n      /bin/opencc_dict"|g' \
-            ~/.xmake/repositories/xmake-repo/packages/o/opencc/xmake.lua
-          xmake f \
+            ~/.xmake/repositories/xmake-repo/packages/o/opencc/xmake.lua || true
+          echo "===== [4/4] xmake configure ====="
+          timeout 900 xmake f \
             --qt="${{ env.QT_DIR }}" \
             --arch=arm64-v8a \
             --build-platform=${{ env.BUILD_PLATFORM }} \
@@ -132,7 +145,8 @@ jobs:
             --toolchain=zig \
             -m ${{ env.BUILD_MODE }} \
             -y \
-            --cross=aarch64-linux-gnu.2.27
+            --cross=aarch64-linux-gnu.2.27 || { echo "XMAKE_CONFIGURE_FAILED"; exit 1; }
+          echo "===== configure finished ====="
 
       - name: 编译 PenMods
         run: xmake build
