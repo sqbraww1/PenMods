@@ -3,6 +3,8 @@
 #include "base/Hook.h"
 #include "base/YPointer.h"
 
+#include "common/Event.h"
+
 #include "filemanager/player/MusicPlayer.h"
 
 #include <QDir>
@@ -44,14 +46,18 @@ MediaKeys::MediaKeys() : Logger("MediaKeys") {
     mScanTimer = new QTimer(this);
     mScanTimer->setInterval(2000);
     connect(mScanTimer, &QTimer::timeout, this, &MediaKeys::rescan);
-    mScanTimer->start();
 
     mPollTimer = new QTimer(this);
     mPollTimer->setInterval(100);
     connect(mPollTimer, &QTimer::timeout, this, &MediaKeys::poll);
-    mPollTimer->start();
 
-    rescan();
+    // QTimer 必须在事件循环启动后才能真正生效，因此在 uiCompleted 时再启动。
+    connect(&Event::getInstance(), &Event::uiCompleted, this, [this]() {
+        info("MediaKeys started (uiCompleted), scanning /dev/input for AVRCP devices");
+        mScanTimer->start();
+        mPollTimer->start();
+        rescan();
+    });
 }
 
 void MediaKeys::rescan() {
